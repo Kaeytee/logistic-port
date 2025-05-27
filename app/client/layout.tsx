@@ -5,9 +5,8 @@ import ClientHeader from './components/header';  // Import the header component 
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  PackageCheck,
+  Package,
   Clock,
-  History,
   Settings,
   Headphones,
   Info,
@@ -15,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import Image from 'next/image';
 // Import the authentication context hook for logout functionality
 import { useAuth } from "@/components/auth-context";
 
@@ -55,31 +55,39 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { logout, user } = useAuth(); // Get user information from auth context
 
   // State for responsive layout (mobile/desktop) and sidebar visibility
   // isMobileView: tracks if current viewport is mobile
   // isSidebarOpen: tracks sidebar visibility (mobile: drawer, desktop: collapse)
   const [isMobileView, setIsMobileView] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default closed on mobile for UX
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Default open on desktop
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Track logout state
+  
+  // Helper function to get user initials when no profile image is available
+  const getUserInitials = () => {
+    if (!user?.name) return '👤';
+    
+    // Split the name and get initials
+    const nameParts = user.name.split(' ');
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
+    
+    // Get first and last name initials
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+  };
 
   /**
-   * Navigation items
-   * [2025-05-26] Updated navigation to match the design requirements exactly
-   * Renamed to "Shipment History" to "Awaiting Shipment" to match UI design
-   * - Cascade AI
-   */
-  /**
-   * Main navigation items array
-   * Each item contains the icon, text label, and path to navigate to
-   * Order matters - appears in sidebar in this exact order
+   * Navigation items updated to match the exact design from the image
+   * - Main navigation: Dashboard, Submit Shipment, Shipment History, Settings
+   * - Footer navigation: Support, About, log out (lowercase as in design)
    */
   const navItems = [
     // Dashboard entry point with dashboard icon
     { icon: <LayoutDashboard size={20} />, text: 'Dashboard', path: '/client/dashboard' },
-    // Submit Shipment option with package check icon
-    { icon: <PackageCheck size={20} />, text: 'Submit Shipment', path: '/client/submit-shipment' },
-    // Awaiting Shipment (singular) to match the design in the provided UI mockup
-    { icon: <History size={20} />, text: 'Awaiting Shipment', path: '/client/shipment-history' },
+    // Submit Shipment option with package icon
+    { icon: <Package size={20} />, text: 'Submit Shipment', path: '/client/submit-shipment' },
+    // Shipment History (exact name from design)
+    { icon: <Clock size={20} />, text: 'Shipment History', path: '/client/shipment-history' },
     // Settings page with settings icon
     { icon: <Settings size={20} />, text: 'Settings', path: '/client/settings' },
   ];
@@ -88,7 +96,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const footerItems = [
     { icon: <Headphones size={20} />, text: 'Support', path: '/client/support' },
     { icon: <Info size={20} />, text: 'About', path: '/client/about' },
-    // Logout is now a dedicated button for best UX/security
+    // Logout is lowercase in the design image
+    { icon: <LogOut size={20} />, text: 'log out', path: '/logout' },
   ];
 
   // Listen for window resize to detect mobile view
@@ -116,8 +125,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
    */
   const toggleSidebar = () => setIsSidebarOpen((open) => !open);
 
-  // Use the useAuth hook to get the logout function from the AuthProvider context
-  const { logout } = useAuth();
+  // We already defined logout in the component scope, so no need to redefine it here
 
   /**
    * Handles navigation item clicks.
@@ -181,82 +189,164 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             ? `fixed z-30 top-0 left-0 h-full transition-transform duration-300 ease-in-out shadow-lg ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
             : 'relative h-full transition-width duration-300 ease-in-out'
           }
-          ${!isSidebarOpen && !isMobileView ? 'w-16' : 'w-64'}
+          ${!isSidebarOpen && !isMobileView ? 'w-16' : 'w-60'}
+          bg-red-600 text-white
         `}
       >
         <div className="sidebar flex flex-col h-full overflow-hidden">
-          {/* Background image */}
-          <div
-            className="absolute inset-0 z-0 bg-cover bg-center"
-            style={{ backgroundImage: `url('/sidebar-bg.jpg')` }}
-          />
-          {/* Red overlay */}
-          <div className="absolute inset-0 z-10 bg-red-600/5" />
           {/* Sidebar content */}
-          <div className="relative z-20 flex flex-col h-full">
-            {/* Sidebar Header with Logo */}
-            <div className={`p-4 flex ${!isSidebarOpen && !isMobileView ? 'justify-center' : 'justify-start'} items-center relative`}>
-              <h1 className={`font-bold text-white ${!isSidebarOpen && !isMobileView ? 'text-xl' : 'text-2xl'} transition-all duration-300 px-1`}>
-                Logistics.
-              </h1>
-              {/* Toggle button - only on mobile */}
-              {isMobileView && (
-                <button
-                  onClick={toggleSidebar}
-                  className="absolute top-1/2 right-2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white transition-colors shadow"
-                  aria-label="Toggle sidebar"
-                >
-                  {!isSidebarOpen ? (
-                    <ChevronRight className="text-red-700 transition-transform duration-300" size={24} />
+          <div className="flex flex-col h-full justify-between">
+            {/* Top section with logo and profile */}
+            <div>
+              {/* Sidebar Header with Logo */}
+              <div className="p-4 flex justify-center items-center">
+                <h1 className="font-bold text-white text-2xl">
+                  Logistics.
+                </h1>
+                {/* Toggle button - only on mobile */}
+                {isMobileView && (
+                  <button
+                    onClick={toggleSidebar}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white transition-colors shadow"
+                    aria-label="Toggle sidebar"
+                  >
+                    {!isSidebarOpen ? (
+                      <ChevronRight className="text-red-700 transition-transform duration-300" size={24} />
+                    ) : (
+                      <ChevronLeft className="text-red-700 transition-transform duration-300" size={24} />
+                    )}
+                  </button>
+                )}
+              </div>
+              
+              {/* User profile section - dynamically displays logged-in user's information */}
+              <div className="flex flex-col items-center w-full mb-6">
+                {/* User avatar - displays user profile image or initials fallback */}
+                <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center mb-2 bg-white/20">
+                  {user?.image ? (
+                    /* Render user's profile image if available */
+                    <Image 
+                      src={user.image} 
+                      alt={`${user.name || 'User'} profile`} 
+                      width={64} 
+                      height={64} 
+                      className="object-cover w-full h-full"
+                      priority
+                    />
                   ) : (
-                    <ChevronLeft className="text-red-700 transition-transform duration-300" size={24} />
+                    /* Render user initials as fallback */
+                    <span className="text-xl font-bold text-white">{getUserInitials()}</span>
                   )}
-                </button>
-              )}
+                </div>
+                
+                {/* User name and email - dynamically populated from auth context */}
+                <div className="text-center">
+                  <h2 className="font-medium text-lg">{user?.name || 'Welcome'}</h2>
+                  <p className="text-sm text-white/90">{user?.email || 'Sign in to continue'}</p>
+                </div>
+              </div>
+              
+              {/* Main Navigation Links */}
+              <ul className="mt-6 space-y-1">
+                {/* Dashboard item with burgundy background when active */}
+                <li>
+                  <button 
+                    onClick={() => handleItemClick('/client/dashboard')} 
+                    className={`flex items-center w-full py-3 px-6 ${isItemActive('/client/dashboard') ? 'bg-red-900 border-l-4 border-white' : 'hover:bg-red-700'}`}
+                    disabled={isLoggingOut}
+                  >
+                    <LayoutDashboard className="w-6 h-6 mr-3" />
+                    <span>Dashboard</span>
+                  </button>
+                </li>
+                
+                {/* Submit Shipment */}
+                <li>
+                  <button 
+                    onClick={() => handleItemClick('/client/submit-shipment')} 
+                    className={`flex items-center w-full py-3 px-6 ${isItemActive('/client/submit-shipment') ? 'bg-red-900 border-l-4 border-white' : 'hover:bg-red-700'}`}
+                    disabled={isLoggingOut}
+                  >
+                    <Package className="w-6 h-6 mr-3" />
+                    <span>Submit Shipment</span>
+                  </button>
+                </li>
+                
+                {/* Shipment History */}
+                <li>
+                  <button 
+                    onClick={() => handleItemClick('/client/shipment-history')} 
+                    className={`flex items-center w-full py-3 px-6 ${isItemActive('/client/shipment-history') ? 'bg-red-900 border-l-4 border-white' : 'hover:bg-red-700'}`}
+                    disabled={isLoggingOut}
+                  >
+                    <Clock className="w-6 h-6 mr-3" />
+                    <span>Shipment History</span>
+                  </button>
+                </li>
+                
+                {/* Settings */}
+                <li>
+                  <button 
+                    onClick={() => handleItemClick('/client/settings')} 
+                    className={`flex items-center w-full py-3 px-6 ${isItemActive('/client/settings') ? 'bg-red-900 border-l-4 border-white' : 'hover:bg-red-700'}`}
+                    disabled={isLoggingOut}
+                  >
+                    <Settings className="w-6 h-6 mr-3" />
+                    <span>Settings</span>
+                  </button>
+                </li>
+              </ul>
             </div>
-            {/* Navigation Links */}
-            <div className="flex-grow py-5">
-              {navItems.map((item) => (
-                <SidebarItem
-                  key={item.text}
-                  icon={item.icon}
-                  text={item.text}
-                  active={isItemActive(item.path)}
-                  onClick={() => handleItemClick(item.path)}
-                  collapsed={!isSidebarOpen && !isMobileView}
-                />
-              ))}
-            </div>
-            {/* Footer Links */}
-            <div className="flex flex-col gap-1 pb-4">
-              {footerItems.map((item) => (
-                <SidebarItem
-                  key={item.text}
-                  icon={item.icon}
-                  text={item.text}
-                  active={isItemActive(item.path)}
-                  onClick={() => handleItemClick(item.path)}
-                  collapsed={!isSidebarOpen && !isMobileView}
-                />
-              ))}
-              {/* Logout Button: Rendered exactly where the 'Logout' SidebarItem was, using SidebarItem style */}
-              <SidebarItem
-                icon={<LogOut size={20} />}
-                text="Logout"
-                active={false}
-                onClick={async () => {
-                  try {
-                    // Call the logout function from the authentication context
-                    await logout();
-                    // Redirect to home after logout for security and UX
-                    await router.push('/');
-                  } catch (err) {
-                    // Log any error that occurs during logout
-                    console.error('Logout failed:', err);
-                  }
-                }}
-                collapsed={!isSidebarOpen && !isMobileView}
-              />
+            
+            {/* Footer Links at bottom of sidebar */}
+            <div className="mt-auto">
+              <ul className="space-y-1">
+                {/* Support */}
+                <li>
+                  <button 
+                    onClick={() => handleItemClick('/client/support')} 
+                    className={`flex items-center w-full py-3 px-6 ${isItemActive('/client/support') ? 'bg-red-900 border-l-4 border-white' : 'hover:bg-red-700'}`}
+                    disabled={isLoggingOut}
+                  >
+                    <Headphones className="w-6 h-6 mr-3" />
+                    <span>Support</span>
+                  </button>
+                </li>
+                
+                {/* About */}
+                <li>
+                  <button 
+                    onClick={() => handleItemClick('/client/about')} 
+                    className={`flex items-center w-full py-3 px-6 ${isItemActive('/client/about') ? 'bg-red-900 border-l-4 border-white' : 'hover:bg-red-700'}`}
+                    disabled={isLoggingOut}
+                  >
+                    <Info className="w-6 h-6 mr-3" />
+                    <span>About</span>
+                  </button>
+                </li>
+                
+                {/* log out - lowercase as in design */}
+                <li>
+                  <button 
+                    onClick={async () => {
+                      setIsLoggingOut(true);
+                      try {
+                        await logout();
+                        await router.push('/');
+                      } catch (err) {
+                        console.error('Logout failed:', err);
+                      } finally {
+                        setIsLoggingOut(false);
+                      }
+                    }}
+                    className="flex items-center w-full py-3 px-6 hover:bg-red-700"
+                    disabled={isLoggingOut}
+                  >
+                    <LogOut className="w-6 h-6 mr-3" />
+                    <span>log out</span>
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
