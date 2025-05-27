@@ -7,7 +7,7 @@
  * [2025-05-27] Refactored to fix Vercel build errors with static site generation
  * -- Senior Engineer
  */
-
+ 
 import React, { Suspense } from "react";
 import LoginClientPage from "./client-page";
 
