@@ -16,7 +16,7 @@ import Cookies from "js-cookie";
 const DUMMY_USER = {
   id: "user-001",
   name: "Austin Bediako",
-  email: "austin@logistics.com",
+  email: "test@example.com",
   password: "password123", // Never stored in production, only for development
   image: "https://www.pngall.com/wp-content/uploads/12/Avatar-PNG-Background.png",
   role: "client",
