@@ -92,15 +92,17 @@ const PackageForm: React.FC<PackageFormProps> = ({
 }) => {
   // Auto-select Air delivery type if none is selected
   useEffect(() => {
-    // If freightType is not set or not 'air', set it to 'air'
+    // If freightType is not set or not 'air', directly update to 'air'
+    // This is more explicit and avoids synthetic event creation
     if (!formData.freightType || formData.freightType !== 'air') {
-      const fakeEvent = {
+      // Directly call onInputChange with the necessary information
+      // This is cleaner and more maintainable than creating a fake event
+      onInputChange({
         target: {
           name: 'freightType',
           value: 'air'
         }
-      } as React.ChangeEvent<HTMLSelectElement>;
-      onInputChange(fakeEvent);
+      } as React.ChangeEvent<HTMLSelectElement>);
     }
   }, [formData.freightType, onInputChange]);
   

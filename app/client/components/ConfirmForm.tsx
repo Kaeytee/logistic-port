@@ -7,7 +7,7 @@
  * -- Cascade AI
  */
 
-import React from "react";
+import React, { useCallback } from 'react';
 import { DELIVERY_TYPES, PACKAGE_TYPES } from "@/lib/constants";
 
 // Props interface for ConfirmForm following clean code and OOP best practices
@@ -102,10 +102,11 @@ const ConfirmForm: React.FC<ConfirmFormProps> = ({
         <p className="text-gray-500 mb-6">Please review all information before submitting your package request.</p>
       </div>
 
-      <form onSubmit={(e) => {
+      {/* Form with memoized submit handler for improved performance */}
+      <form onSubmit={useCallback((e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault(); // Ensure we prevent default form submission behavior
         onSubmit(e); // Pass the event to the parent handler
-      }} className="space-y-6">
+      }, [onSubmit])} className="space-y-6">
         {/* Summary sections */}
         <div className="mt-8 space-y-8 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 sm:p-6">
           {/* Client Information */}
