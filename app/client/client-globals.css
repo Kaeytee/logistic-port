@@ -1,0 +1,43 @@
+/**
+ * Client-specific global styles
+ * This file contains styles that are specific to the client area
+ * Created by Senior Engineer, Facebook
+ * Date: 2025-05-27
+ */
+
+/* Import global styles to ensure consistency */
+@import '../globals.css';
+
+/* Client-specific overrides */
+.client-layout {
+  min-height: 100vh;
+}
+
+/* Enhancement for profile image container */
+.profile-image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Professional styling for upload button */
+.upload-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #ef4444;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+
+/* Ensure proper layout in all viewports */
+@media (max-width: 768px) {
+  .client-sidebar {
+    position: fixed;
+    z-index: 50;
+  }
+}

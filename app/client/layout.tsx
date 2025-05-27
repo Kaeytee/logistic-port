@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import './client-globals.css'; // Import client-specific styles
 import ClientHeader from './components/header';  // Import the header component (fixed: directory renamed to 'components')
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -55,7 +56,19 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout, user } = useAuth(); // Get user information from auth context
+  const { user, logout, loading } = useAuth(); // Get user information from auth context
+
+  /**
+   * Default avatar and user data management
+   * Following clean architecture principles with proper state initialization
+   */
+  // Default avatar URL as specified
+  const DEFAULT_AVATAR = "https://www.pngall.com/wp-content/uploads/12/Avatar-PNG-Background.png";
+  
+  // State for user data with proper fallback chains
+  const [profileImage, setProfileImage] = useState<string>(user?.image || DEFAULT_AVATAR);
+  const [userName, setUserName] = useState<string>(user?.name || 'Welcome');
+  const [userEmail, setUserEmail] = useState<string>(user?.email || 'Sign in to continue');
 
   // State for responsive layout (mobile/desktop) and sidebar visibility
   // isMobileView: tracks if current viewport is mobile
@@ -171,6 +184,46 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   }, [pathname]);
 
+  /**
+   * Global event handling for cross-component synchronization
+   * Follows Observer Pattern from OOP for decoupled communication
+   */
+  useEffect(() => {
+    // Constants for event names - must match those in AccountSettings
+    const PROFILE_IMAGE_UPDATED_EVENT = 'profile-image-updated';
+    const USER_DATA_UPDATED_EVENT = 'user-data-updated';
+    
+    // Handler for image update events
+    const handleGlobalImageUpdate = (event: CustomEvent<{imageUrl: string}>) => {
+      // Update local profile image state
+      setProfileImage(event.detail.imageUrl);
+      console.log('Layout updated profile image from global event');
+    };
+    
+    // Handler for user data update events
+    const handleUserDataUpdate = (event: CustomEvent<{name?: string; email?: string; phone?: string}>) => {
+      // Update user data states if provided in the event
+      if (event.detail.name) {
+        setUserName(event.detail.name);
+        console.log('Layout updated user name from global event');
+      }
+      if (event.detail.email) {
+        setUserEmail(event.detail.email);
+        console.log('Layout updated user email from global event');
+      }
+    };
+    
+    // Add event listeners with proper typing
+    window.addEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleGlobalImageUpdate as EventListener);
+    window.addEventListener(USER_DATA_UPDATED_EVENT, handleUserDataUpdate as EventListener);
+    
+    // Cleanup function removes all listeners when component unmounts
+    return () => {
+      window.removeEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleGlobalImageUpdate as EventListener);
+      window.removeEventListener(USER_DATA_UPDATED_EVENT, handleUserDataUpdate as EventListener);
+    };
+  }, []);
+
   return (
     <div className="flex h-screen w-full bg-slate-100 dark:bg-slate-900">
       {/* Mobile overlay: closes sidebar when clicked */}
@@ -223,15 +276,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <div className="flex flex-col items-center w-full mb-6">
                 {/* User avatar - displays user profile image or initials fallback */}
                 <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center mb-2 bg-white/20">
-                  {user?.image ? (
+                  {profileImage ? (
                     /* Render user's profile image if available */
                     <Image 
-                      src={user.image} 
-                      alt={`${user.name || 'User'} profile`} 
+                      src={profileImage} 
+                      alt={`${user?.name || 'User'} profile`} 
                       width={64} 
                       height={64} 
                       className="object-cover w-full h-full"
                       priority
+                      unoptimized={profileImage.startsWith('data:')} /* Allow data URLs for immediate preview */
                     />
                   ) : (
                     /* Render user initials as fallback */
@@ -241,8 +295,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 
                 {/* User name and email - dynamically populated from auth context */}
                 <div className="text-center">
-                  <h2 className="font-medium text-lg">{user?.name || 'Welcome'}</h2>
-                  <p className="text-sm text-white/90">{user?.email || 'Sign in to continue'}</p>
+                  <h2 className="font-medium text-lg">{userName}</h2>
+                  <p className="text-sm text-white/90">{userEmail}</p>
                 </div>
               </div>
               

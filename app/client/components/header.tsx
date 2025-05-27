@@ -23,6 +23,60 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
 }) => {
   // Get user from authentication context
   const { user } = useAuth();
+  
+  // Default avatar URL as specified
+  const DEFAULT_AVATAR = "https://www.pngall.com/wp-content/uploads/12/Avatar-PNG-Background.png";
+  
+  // State for user data with proper fallback chains following OOP state management principles
+  const [profileImage, setProfileImage] = useState<string>(user?.image || DEFAULT_AVATAR);
+  const [userName, setUserName] = useState<string>(user?.name || "Guest");
+  const [userEmail, setUserEmail] = useState<string>(user?.email || "emailgoeshere");
+  
+  // Constants for event names - following event-driven architecture pattern
+  const PROFILE_IMAGE_UPDATED_EVENT = 'profile-image-updated';
+  const USER_DATA_UPDATED_EVENT = 'user-data-updated';
+  
+  /**
+   * Effect to handle all profile updates from other components
+   * This follows Observer Pattern from OOP for cross-component communication
+   */
+  useEffect(() => {
+    // Handler for image update events
+    const handleGlobalImageUpdate = (event: CustomEvent<{imageUrl: string}>) => {
+      // Update local profile image state
+      setProfileImage(event.detail.imageUrl);
+      console.log('Header updated profile image from global event');
+    };
+    
+    // Handler for user data update events - follows same pattern for consistency
+    const handleUserDataUpdate = (event: CustomEvent<{name?: string; email?: string; phone?: string}>) => {
+      // Update user data states if provided in the event
+      if (event.detail.name) {
+        setUserName(event.detail.name);
+      }
+      if (event.detail.email) {
+        setUserEmail(event.detail.email);
+      }
+      console.log('Header updated user data from global event');
+    };
+    
+    // Add event listeners with proper typing - following clean event registration pattern
+    window.addEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleGlobalImageUpdate as EventListener);
+    window.addEventListener(USER_DATA_UPDATED_EVENT, handleUserDataUpdate as EventListener);
+    
+    // Cleanup function removes all listeners when component unmounts - preventing memory leaks
+    return () => {
+      window.removeEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleGlobalImageUpdate as EventListener);
+      window.removeEventListener(USER_DATA_UPDATED_EVENT, handleUserDataUpdate as EventListener);
+    };
+  }, []);
+  
+  // Update profile image when user changes
+  useEffect(() => {
+    if (user?.image) {
+      setProfileImage(user.image);
+    }
+  }, [user?.image]);
 
   return (
     <header
@@ -45,8 +99,8 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
         {/* Title that adapts text size based on screen width */}
         {/*a welcome message that will be displayed when the user is logged in Hi {user?.name} it should just show the surname name not the entire name */}
         <div className="font-bold text-xl sm:text-2xl text-[color:#1A2B6D] truncate dark:text-white">
-          {/*add the comment on how it can display the firstname just change the 1 to 0*/}
-          Hi, {user?.name ? (user.name.split(" ").length > 1 ? user.name.split(" ")[1] : user.name) : "Guest"}
+          {/*Display the surname by default (index 1) or firstname (index 0) if no surname exists*/}
+          Hi, {userName ? (userName.split(" ").length > 1 ? userName.split(" ")[1] : userName) : "Guest"}
         </div>
       </div>
 
@@ -56,18 +110,19 @@ const ClientHeader: React.FC<ClientHeaderProps> = ({
         {/* User info stacked, always visible, themed color, right-aligned */}
         <div className="flex flex-col items-end text-right mr-2">
           <span className="text-sm font-bold text-slate-800 dark:text-white leading-tight">
-            {user?.name || "UserName"}
+            {userName || "UserName"}
           </span>
           <span className="text-xs text-[color:#1A2B6D] dark:text-slate-300 leading-tight">
-            {user?.email || "emailgoeshere"}
+            {userEmail || "emailgoeshere"}
           </span>
         </div>
         {/* User icon, themed border for clarity it should use the persons profile by default and let the styling be professional  */}
         <div className="flex items-center justify-center border-slate-800 dark:border-white p-0.5">
           <img
-            src={user?.image || "https://www.pngall.com/wp-content/uploads/12/Avatar-PNG-Background.png"}
+            src={profileImage}
             alt="User Profile"
             className="w-8 h-8 rounded-full object-cover"
+            onError={() => setProfileImage(DEFAULT_AVATAR)}
           />
         </div>
         {/* Theme toggle button - animated, consistent with navbar */}
