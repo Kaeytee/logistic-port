@@ -394,7 +394,7 @@ export default function RegisterPage() {
           </Card>
         </div>
       </main>
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 }
