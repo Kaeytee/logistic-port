@@ -1,9 +1,15 @@
 import Image from 'next/image';
 import React from 'react';
-import { Box, Clock, History, MapPin } from 'lucide-react'; // Import icons that match the design
+import { Box, Clock, History, MapPin, Settings } from 'lucide-react'; // Import icons that match the design
 
-// Type for the icon component name
-type IconComponentName = "box" | "clock-delivery" | "history" | "location";
+/**
+ * Type definition for icon component names available in dashboard cards
+ * Each name corresponds to a specific Lucide icon component
+ * 
+ * [2025-05-27] Added 'settings' option for account management card
+ * -- Senior Engineer
+ */
+type IconComponentName = "box" | "clock-delivery" | "history" | "location" | "settings";
 
 // Interface for DashboardCard props
 export interface DashboardCardProps {
@@ -24,7 +30,13 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   iconComponent, 
   onClick 
 }) => {
-  // Function to render the appropriate icon based on the iconComponent prop
+  /**
+   * Function to render the appropriate icon based on the iconComponent prop
+   * Maps each icon name to its corresponding Lucide component
+   * Falls back to Box icon if an unsupported name is provided
+   * 
+   * @returns JSX Element with the appropriate icon
+   */
   const renderIcon = () => {
     switch (iconComponent) {
       case "box":
@@ -35,6 +47,8 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
         return <History className="h-8 w-8 text-white" />;
       case "location":
         return <MapPin className="h-8 w-8 text-white" />;
+      case "settings":
+        return <Settings className="h-8 w-8 text-white" />;
       default:
         return <Box className="h-8 w-8 text-white" />;
     }

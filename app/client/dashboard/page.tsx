@@ -18,13 +18,6 @@ const dashboardCards: DashboardCardConfig[] = [
     iconComponent: "box" // Using the box icon from the image
   },
   {
-    title: "Awaiting Deliveries",
-    description: "View pending deliveries",
-    imageSrc: "/awaiting-time.png", // Stopwatch with boxes
-    href: "/client/awaiting-shipments",
-    iconComponent: "clock-delivery" // Using the clock icon from the image
-  },
-  {
     title: "Shipment History",
     description: "Visit previous orders",
     imageSrc: "/shipment-history.jpg", // Smiling courier with boxes
@@ -38,6 +31,13 @@ const dashboardCards: DashboardCardConfig[] = [
     href: "/client/track-shipment",
     iconComponent: "location" // Using the location icon from the image
   },
+  {
+    title: "Settings",
+    description: "Manage your account settings",
+    imageSrc: "/awaiting-time.png", // Reusing the same image temporarily
+    href: "/client/settings",
+    iconComponent: "settings" // Changed to settings icon for appropriate visual cue
+  }
 ];
 
 /**

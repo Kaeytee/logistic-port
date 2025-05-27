@@ -1,6 +1,16 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+/**
+ * Login Page Component
+ * 
+ * Handles user authentication and proper redirection after login
+ * Supports callbackUrl for redirecting users back to their intended destination
+ * 
+ * [2025-05-27] Fixed black screen issue by properly handling callbackUrl parameter
+ * -- Senior Engineer
+ */
+
+import React, { useState, FormEvent, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { TruckIcon, LogIn, AlertCircle } from "lucide-react";
@@ -22,42 +32,93 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import RegisterBackground from "@/public/deliveryparcel.jpg";
 import { useAuth } from "@/components/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // Add useSearchParams
 
+/**
+ * LoginPage Component - Handles user authentication and redirection
+ */
 export default function LoginPage() {
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Authentication and routing hooks
   const { login, loading, user } = useAuth();
   const router = useRouter();
-
+  const searchParams = useSearchParams();
+  
+  // Extract callback URL from search parameters (for redirect after login)
+  const callbackUrl = searchParams?.get('callbackUrl') || '/client/dashboard';
+  
+  // Redirect if user is already authenticated
+  // Use a ref to track whether a redirect has been attempted to prevent infinite loops
+  const hasRedirected = useRef(false);
+  
   useEffect(() => {
-    if (!loading && user) {
-      router.replace("/client/dashboard");
+    // Only redirect if user is authenticated, not loading, and we haven't redirected yet
+    if (!loading && user && !hasRedirected.current) {
+      // Mark that we've attempted a redirect
+      hasRedirected.current = true;
+      
+      // Decode the URL if it's encoded
+      const decodedUrl = callbackUrl.startsWith('/') ? callbackUrl : decodeURIComponent(callbackUrl);
+      
+      // Use the callback URL if available, otherwise default to dashboard
+      console.log('Redirecting to:', decodedUrl);
+      
+      // Force a hard navigation instead of a client-side transition
+      window.location.href = decodedUrl;
     }
-  }, [user, loading, router]);
+  }, [user, loading, callbackUrl]);
 
+  /**
+   * Handle login form submission
+   * Validates input, attempts login, and handles errors
+   * @param e - Form submit event
+   */
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
+    // Validate form input
     if (!email || !password) {
       setError("Please enter both email and password");
       return;
     }
 
+    // Attempt login
     setIsLoading(true);
     const ok = await login(email, password, rememberMe);
+    
+    // Handle login result
     if (!ok) {
       setError("Invalid email or password. Please try again.");
+    } else {
+      // Successful login - handle redirect via useEffect
+      // Don't call router.replace here as it can create race conditions
+      console.log('Login successful, awaiting redirect');
     }
+    
     setIsLoading(false);
   };
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
-  if (user) return null;
+  // Show loading state while authentication state is being determined
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="animate-pulse text-lg font-medium">Loading...</div>
+    </div>
+  );
+  
+  // If user is already authenticated, show loading while redirect happens
+  // Don't return null as this causes the black screen
+  if (user) return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="animate-pulse text-lg font-medium">Redirecting to dashboard...</div>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
